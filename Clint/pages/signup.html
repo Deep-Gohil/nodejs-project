@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign UP</title>
+    <!-- decode  -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/jwt-decode@4.0.0/build/cjs/index.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+
+    <!-- reCAPTCHA v2 -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
         integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -164,6 +172,7 @@
                     <input type="submit"
                         style="width: 90px; height: 40px; border-radius: 20px; border: none; background-color: rgb(85, 85, 253); cursor: pointer; color: white; font-size: 1rem;"
                         value="Sign up">
+                        <div class="g-recaptcha" data-sitekey="6LcJl2wqAAAAAFMkthxNKaaTDROCXEZkawkkrQSz"></div>
                 </form>
             </div>
         </div>

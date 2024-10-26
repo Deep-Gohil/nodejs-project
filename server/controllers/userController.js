@@ -1,11 +1,9 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-// const sendMail = require("../service/sendMail");
 const User = require("../models/userSchema");
 const sendMail = require("../services/sendMail");
 const otps = new Map();
 
-// Signup Function
 const Signup = async (req, res) => {
   let { email, password } = req.body;
   try {
@@ -15,7 +13,7 @@ const Signup = async (req, res) => {
     } else {
       let hash = await bcrypt.hash(password, 10);
       req.body.password = hash;
-      user = await User.create(req.body);
+      user = await User.create({ ...req.body, isVerified: false });
 
       let data = {
         email: user.email,
@@ -25,17 +23,18 @@ const Signup = async (req, res) => {
       };
 
       let token = jwt.sign(data, "Private-Key");
-      let otp = Math.round(Math.random() * 10000); // Fixed random function
+      let otp = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit OTP
       otps.set(email, otp);
 
       let html = `<div> 
          <h1>Hello ${user.username}</h1>
-         <a href="http://localhost:8090/user/verify/${token}/${otp}"> Verify</a>
+         <p>Click the link below to verify your account:</p>
+         <a href="http://localhost:8090/user/verify/${token}/${otp}">Verify Account</a>
       </div>`;
-      await sendMail(email, "verify", html);
+      await sendMail(email, "Verify your account", html);
 
       return res.status(201).json({
-        msg: "Sign Up Successful",
+        msg: "Sign Up Successful. Please check your email to verify your account.",
         token: token,
       });
     }
@@ -44,13 +43,16 @@ const Signup = async (req, res) => {
   }
 };
 
-// Login Function
 const Login = async (req, res) => {
   let { email, password } = req.body;
   let user = await User.findOne({ email });
 
   if (!user) {
     return res.status(404).json({ msg: "User not found" });
+  }
+
+  if (!user.isVerified) {
+    return res.status(403).json({ msg: "Please verify your email before logging in." });
   }
 
   let isMatch = await bcrypt.compare(password, user.password);
@@ -63,29 +65,27 @@ const Login = async (req, res) => {
     id: user.id,
     role: user.role,
     username: user.username,
+    isVerified: user.isVerified,
   };
 
   let token = jwt.sign(data, "Private-Key");
-  return res.status(200).json({ msg: "Login successful", token: token });
+  return res.status(200).json({ msg: "Login successful", token: token, isVerified: user.isVerified });
 };
 
-// Get All Users
 const GetAllUsers = async (req, res) => {
   let data = await User.find();
   res.status(200).json(data);
 };
 
-// Get User by ID
 const GetUser = async (req, res) => {
   let { id } = req.params;
   let user = await User.findById(id);
   if (!user) {
     return res.status(404).json({ msg: "User not found" });
   }
-  res.status(200).json({msg:"User Deleted Successfully"});
+  res.status(200).json(user);
 };
 
-// Delete User
 const DeleteUser = async (req, res) => {
   let { id } = req.params;
   try {
@@ -95,18 +95,32 @@ const DeleteUser = async (req, res) => {
     }
     res.status(200).json({ msg: "User deleted successfully", user });
   } catch (error) {
-    return res.status(404).json({ msg: "Error deleting user", error });
+    return res.status(500).json({ msg: "Error deleting user", error });
   }
 };
 
-// Verify User Function
+const deleteMany = async (req, res) => {
+  let { ids } = req.body;
+  try {
+    await User.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({ msg: "Users deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ msg: "Error deleting users", error });
+  }
+};
+
 const VerifyUser = async (req, res) => {
   let { token, otp } = req.params;
   try {
     let decode = jwt.verify(token, "Private-Key");
     let oldOtp = otps.get(decode.email);
+
     if (oldOtp == otp) {
-      return res.status(200).json({ msg: "User verified successfully" });
+      await User.findByIdAndUpdate(decode.id, { isVerified: true });
+      otps.delete(decode.email); // Clear OTP after verification
+
+      // Redirect to client index.html
+      return res.redirect("/index.html");
     } else {
       return res.status(403).json({ msg: "Invalid OTP" });
     }
@@ -115,4 +129,6 @@ const VerifyUser = async (req, res) => {
   }
 };
 
-module.exports = {Signup,Login,GetAllUsers,GetUser,DeleteUser,VerifyUser,};
+
+
+module.exports = { Signup, Login, GetAllUsers, GetUser, DeleteUser, VerifyUser, deleteMany };

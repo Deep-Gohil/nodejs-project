@@ -18,6 +18,7 @@ const userApi = {
         a
           ? (window.location.href = "http://127.0.0.1:5501/pages/login.html")
           : console.log("Not set");
+          Cookies.set("isVerified", res.isVerified);
       } else {
         console.error("Signup failed", res);
       }
@@ -41,6 +42,7 @@ const userApi = {
         // Store the token in cookies for 7 days
         Cookies.set("token", res.token, { expires: 7 });
         console.log("Login successful, token stored in cookies", res);
+        Cookies.set("isVerified", res.isVerified);
         window.location.href = "/";
       } else {
         console.error("Login failed", res);
